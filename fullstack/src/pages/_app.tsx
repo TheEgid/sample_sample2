@@ -6,7 +6,6 @@ export default function App({ Component, pageProps }: AppProps): React.JSX.Eleme
     return (
         <>
             <Component {...pageProps} />
-            ;
         </>
     );
 }

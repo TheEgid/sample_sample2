@@ -14,7 +14,7 @@ import ts from "typescript-eslint";
 
 /** @type {import("eslint").Linter["getConfigForFile"]} */
 const config = [
-  { ignores: [".next/**/*"] },
+  { ignores: [".next/**/*", "prisma/**/*"] },
   js.configs.recommended,
   ...ts.configs.recommended,
   {

@@ -8,7 +8,13 @@ const nextConfig: NextConfig = {
     devIndicators: false,
     // output: "standalone",
     images: {
-        domains: ["media.istockphoto.com"],
+        remotePatterns: [
+            {
+                protocol: "https",
+                hostname: "media.istockphoto.com",
+                port: "",
+            },
+        ],
     },
 };
 

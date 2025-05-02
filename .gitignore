@@ -165,3 +165,10 @@ fullstack/generated
 fullstack/generated/*
 
 .repomix
+
+# Ignore Gradle project-specific cache directory
+.gradle
+.jar
+
+# Ignore Gradle build output directory
+build

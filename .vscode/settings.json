@@ -4,4 +4,5 @@
     ],
     "npm.packageManager": "pnpm",
     "files.eol": "\n",
+    "terminal.integrated.defaultEncoding": "utf8"
 }

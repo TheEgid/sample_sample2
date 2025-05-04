@@ -6,8 +6,8 @@ const FancyboxExample = (): React.JSX.Element => {
 
     return (
         <>
-            <Modal opened={opened} onClose={close} title="Authentication">
-                {/* Modal content */}
+            <Modal opened={opened} onClose={close} title="Newwww">
+                Modal content
             </Modal>
 
             <Button variant="default" onClick={open}>

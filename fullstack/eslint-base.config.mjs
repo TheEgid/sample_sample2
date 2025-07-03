@@ -1,6 +1,5 @@
 import js from "@eslint/js";
 import typescriptParser from "@typescript-eslint/parser";
-import stylisticTs from "@stylistic/eslint-plugin-ts";
 import stylistic from "@stylistic/eslint-plugin";
 import effector from "eslint-plugin-effector";
 import reactPlugin from "eslint-plugin-react";
@@ -27,7 +26,6 @@ const config = [
       import: importX,
       react: reactPlugin,
       "@stylistic": stylistic,
-      "@stylistic/ts": stylisticTs,
       ...reactRecommended.plugins,
       "react-hooks": fixupPluginRules(hooksPlugin),
       "effector": fixupPluginRules(effector),

@@ -13,7 +13,7 @@ RUN pnpm install --frozen-lockfile
 # Копирование всего кода
 COPY . .
 
-RUN chown -R node:node /sqlite-db
+# RUN chown -R node:node /sqlite-db
 
 # Запуск в контейнере
 USER node

@@ -27,18 +27,27 @@ services:
       fi;
       pnpm start"
 
-  postgres:
-    image: postgres:15-alpine
-    container_name: full_db_postgres
+  db_sqlite:
+    container_name: db_sqlite_container
+    image: nouchka/sqlite3
     volumes:
-      - database_volume:/var/lib/postgresql/data
-    env_file:
-      - .env
+      - /opt/iul-now-June-25/main-applic/prisma:/database
+    tty: true
+    stdin_open: true
+    working_dir: /database
+    entrypoint: >
+      sh -c "
+      if [ ! -f /database/database-sql-lite.db ]; then
+        echo 'Создаём базу данных...';
+        sqlite3 /database/database-sql-lite.db 'PRAGMA journal_mode=WAL;';
+      fi;
+      exec sqlite3 /database/database-sql-lite.db
+      "
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER"]
+      test: ["CMD-SHELL", "sqlite3 /database/database-sql-lite.db 'SELECT 1;'"]
       interval: 5s
       timeout: 3s
-      retries: 10
+      retries: 5
       start_period: 10s
 
   nginx:
@@ -59,13 +68,7 @@ services:
     build:
       context: ./sqltranslator
       dockerfile: Dockerfile
-    working_dir: /app/backup
-    entrypoint: ["sh", "-c"]
-    tty: true
-    stdin_open: true
-    volumes:
-      - ./backup:/app/backup
-
-
-volumes:
-  database_volume:
+    working_dir: /app
+    depends_on:
+      db_sqlite:
+        condition: service_healthy

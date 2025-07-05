@@ -36,29 +36,10 @@ clean:
 up:
 	@sudo dnf --refresh update && sudo dnf upgrade
 
-# Путь к дампу SQLite
-SQLITE_DUMP=./backup/backup.sql
-# Путь к конвертированному дампу для PostgreSQL
-PG_DUMP=./backup/backup_postgres.sql
-
-
-backup_sqllite:
-	@echo "Создаём дамп базы SQLite с DROP TABLE и DROP INDEX..."
-	@mkdir -p ./backup
-	@chmod 777 ./backup
-	@if docker exec -i db_sqlite_container sh -c '\
-		echo "BEGIN TRANSACTION;"; \
-		sqlite3 /database/database-sql-lite.db "SELECT '\''DROP TABLE IF EXISTS '\'' || name || '\'';'\'' FROM sqlite_master WHERE type='\''table'\'' AND name NOT LIKE '\''sqlite_%'\'';"; \
-		sqlite3 /database/database-sql-lite.db "SELECT '\''DROP INDEX IF EXISTS '\'' || name || '\'';'\'' FROM sqlite_master WHERE type='\''index'\'';"; \
-		sqlite3 /database/database-sql-lite.db ".dump"; \
-		echo "COMMIT;"; \
-	' > $(SQLITE_DUMP); then \
-		chmod 777 $(SQLITE_DUMP); \
-		echo "Дамп успешно создан! $$(date +%F--%H-%M)"; \
-	else \
-		echo "Ошибка при создании дампа базы!"; \
-		exit 1; \
-	fi
+SQLITE_DUMP := $(shell pwd)/backup/backup.sql
+PG_DUMP := $(shell pwd)/backup/backup_postgres.sql
+BACKUP_DIR := $(shell pwd)/backup
+IMAGE_NAME := sqltranslator_container
 
 
 restore_sqllite:
@@ -86,9 +67,36 @@ restore_sqllite:
 	fi
 
 
+backup_sqllite:
+	@echo "Создаём дамп базы SQLite с DROP TABLE и DROP INDEX..."
+	@mkdir -p $(BACKUP_DIR)
+	@chmod 777 $(BACKUP_DIR)
+	@if docker exec -i db_sqlite_container sh -c '\
+		echo "BEGIN TRANSACTION;"; \
+		sqlite3 /database/database-sql-lite.db "SELECT '\''DROP TABLE IF EXISTS '\'' || name || '\'';'\'' FROM sqlite_master WHERE type='\''table'\'' AND name NOT LIKE '\''sqlite_%'\'';"; \
+		sqlite3 /database/database-sql-lite.db "SELECT '\''DROP INDEX IF EXISTS '\'' || name || '\'';'\'' FROM sqlite_master WHERE type='\''index'\'';"; \
+		sqlite3 /database/database-sql-lite.db ".dump"; \
+		echo "COMMIT;"; \
+	' > $(SQLITE_DUMP); then \
+		chmod 777 $(SQLITE_DUMP); \
+		echo "Дамп успешно создан! $$(date +%F--%H-%M)"; \
+	else \
+		echo "Ошибка при создании дампа базы!"; \
+		exit 1; \
+	fi
+
+
 convert_to_postgres: backup_sqllite
+	@echo "Проверяем содержимое исходного дампа:"
+	@head -n 2 $(SQLITE_DUMP)
+	@echo "Проверяем версию sqlglot в контейнере..."
+	@docker run --rm $(IMAGE_NAME) bash -c "/usr/local/bin/python3 -c 'import sqlglot; print(sqlglot.__version__)'"
 	@echo "Конвертируем дамп SQLite в PostgreSQL..."
-	@docker run --rm -v "$(pwd)/backup:/app/backup" sqltranslator_container \
-		sqlt -f SQLite -t PostgreSQL /app/backup/backup.sql > ./backup/backup_postgres.sql
-	@chmod 777 ./backup/backup_postgres.sql
-	@echo "Конвертация завершена, файл: backup/backup_postgres.sql"
+	@docker run --rm -v $(BACKUP_DIR):/app/backup $(IMAGE_NAME) /usr/local/bin/python3 /app/convert.py /app/backup/backup.sql /app/backup/backup_postgres.sql
+	@if [ -f "$(PG_DUMP)" ]; then \
+		ls -lh $(PG_DUMP); \
+	else \
+		echo "Ошибка: файл $(PG_DUMP) не найден!"; \
+		exit 1; \
+	fi
+	@echo "Готово"

@@ -1,10 +1,12 @@
-FROM perl:latest
+FROM python:3.11-bookworm
 
-RUN curl -L http://cpanmin.us | perl - App::cpanminus
+WORKDIR /app
 
-RUN cpanm --notest DBI
-RUN cpanm --notest SQL::Translator
+RUN apt-get update && apt-get install -y bash
 
-WORKDIR /app/backup
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir sqlglot sqlglot[rs]
 
-# # ENTRYPOINT ["sqlt"]
+COPY convert.py .
+
+RUN chmod +x convert.py

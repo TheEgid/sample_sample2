@@ -39,7 +39,8 @@ up:
 SQLITE_DUMP := $(shell pwd)/backup/backup.sql
 PG_DUMP := $(shell pwd)/backup/backup_postgres.sql
 BACKUP_DIR := $(shell pwd)/backup
-IMAGE_NAME := sqltranslator_container
+# //имя через - docker images | grep sqltranslator
+IMAGE_NAME := sample_sample2-sqltranslator
 
 
 restore_sqllite:

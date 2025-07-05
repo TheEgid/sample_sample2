@@ -1,4 +1,4 @@
-include ./fullstack/.env
+include ./main-applic/.env
 export
 
 COMPOSE_BAKE=true

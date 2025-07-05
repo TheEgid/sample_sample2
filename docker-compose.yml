@@ -1,9 +1,9 @@
 services:
-  fullstack:
+  main-applic:
     build:
-      context: fullstack
+      context: main-applic
       dockerfile: Dockerfile
-    container_name: fullstack_container
+    container_name: main-applic_container
     ports:
       - "127.0.0.1:3007:3007"
     restart: on-failure
@@ -16,7 +16,7 @@ services:
       retries: 2
       start_period: 30s
     volumes:
-      - ./fullstack/prisma:/app/prisma
+      - ./main-applic/prisma:/app/prisma
       - ./sqlite-db:/sqlite-db
     command: >
       sh -c "if [ \"$$DOCKER_ENV\" = \"true\" ]; then
@@ -31,7 +31,7 @@ services:
     container_name: db_sqlite_container
     image: nouchka/sqlite3
     volumes:
-      - /opt/iul-now-June-25/main-applic/prisma:/database
+      - ./main-applic/prisma:/database
     tty: true
     stdin_open: true
     working_dir: /database
@@ -60,7 +60,7 @@ services:
     environment:
       TZ: "Europe/Moscow"
     depends_on:
-      fullstack:
+      main-applic:
         condition: service_healthy
 
   sqltranslator:

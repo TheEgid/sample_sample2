@@ -148,21 +148,21 @@ MANIFEST
 
 .swc
 
-/fullstack/build
-/fullstack/node_modules
-/fullstack/public/files/*
-/fullstack/e2e/temp.txt
-/fullstack/e2e/temp.tmp
-/fullstack/public/sitemap-0.xml
-/fullstack/public/sitemap.xml
-/fullstack/public/robots.txt
+/main-applic/build
+/main-applic/node_modules
+/main-applic/public/files/*
+/main-applic/e2e/temp.txt
+/main-applic/e2e/temp.tmp
+/main-applic/public/sitemap-0.xml
+/main-applic/public/sitemap.xml
+/main-applic/public/robots.txt
 
-/fullstack/next-env.d.ts
+/main-applic/next-env.d.ts
 
-fullstack/prisma/generated
-fullstack/prisma/generated/*
-fullstack/generated
-fullstack/generated/*
+main-applic/prisma/generated
+main-applic/prisma/generated/*
+main-applic/generated
+main-applic/generated/*
 
 .repomix
 

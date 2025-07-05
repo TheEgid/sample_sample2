@@ -6,14 +6,14 @@ $folderName = (Get-Item $grandParentDir).Name
 $dst = Join-Path ([Environment]::GetFolderPath("Desktop")) $folderName
 
 $excludeDirs = @(
-    "fullstack\node_modules",
+    "main-applic\node_modules",
     ".git",
     ".vscode",
-    "fullstack\.next",
-    "fullstack\build",
-    "fullstack\public\temporary",
-    "fullstack\test-results",
-    "fullstack\.swc"
+    "main-applic\.next",
+    "main-applic\build",
+    "main-applic\public\temporary",
+    "main-applic\test-results",
+    "main-applic\.swc"
 ) | ForEach-Object { Join-Path $grandParentDir $_ }
 
 $robocopyArgs = @(

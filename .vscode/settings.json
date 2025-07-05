@@ -1,6 +1,6 @@
 {
     "eslint.workingDirectories": [
-        "fullstack",
+        "main-applic",
     ],
     "npm.packageManager": "pnpm",
     "files.eol": "\n",

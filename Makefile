@@ -93,11 +93,28 @@ convert_to_postgres: backup_sqllite
 	@echo "Проверяем версию sqlglot в контейнере..."
 	@docker run --rm $(IMAGE_NAME) bash -c "/usr/local/bin/python3 -c 'import sqlglot; print(sqlglot.__version__)'"
 	@echo "Конвертируем дамп SQLite в PostgreSQL..."
-	@docker run --rm -v $(BACKUP_DIR):/app/backup $(IMAGE_NAME) /usr/local/bin/python3 /app/convert.py /app/backup/backup.sql /app/backup/backup_postgres.sql
+	@docker run --rm -v $(BACKUP_DIR):/app/backup $(IMAGE_NAME) /usr/local/bin/python3 /app/convert.py to-pg /app/backup/backup.sql /app/backup/backup_postgres.sql
 	@if [ -f "$(PG_DUMP)" ]; then \
 		ls -lh $(PG_DUMP); \
 	else \
 		echo "Ошибка: файл $(PG_DUMP) не найден!"; \
+		exit 1; \
+	fi
+	@echo "Готово"
+
+
+# convert_to_sqlite: backup_postgres
+convert_to_sqlite:
+	@echo "Проверяем содержимое исходного дампа PostgreSQL:"
+	@head -n 2 $(PG_DUMP)
+	@echo "Проверяем версию sqlglot в контейнере..."
+	@docker run --rm $(IMAGE_NAME) bash -c "/usr/local/bin/python3 -c 'import sqlglot; print(sqlglot.__version__)'"
+	@echo "Конвертируем дамп PostgreSQL в SQLite..."
+	@docker run --rm -v $(BACKUP_DIR):/app/backup $(IMAGE_NAME) /usr/local/bin/python3 /app/convert.py to-sqlite /app/backup/backup_postgres.sql /app/backup/backup_sqlite.sql
+	@if [ -f "$(SQLITE_DUMP)" ]; then \
+		ls -lh $(SQLITE_DUMP); \
+	else \
+		echo "Ошибка: файл $(SQLITE_DUMP) не найден!"; \
 		exit 1; \
 	fi
 	@echo "Готово"

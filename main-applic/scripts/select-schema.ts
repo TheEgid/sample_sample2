@@ -6,33 +6,21 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-async function selectSchema(): Promise<boolean> {
+const isWindows = process.platform === "win32";
+
+await (async (): Promise<undefined> => {
     try {
-        const isWindows = process.platform === "win32";
-
-        console.log(`OS: ${process.platform}, selecting ${isWindows ? "SQLite" : "PostgreSQL"} schema`);
-
+        const schema = isWindows ? "schema.sqlite-prisma" : "schema.postgresql-prisma";
         const prismaDir = path.resolve(__dirname, "../prisma");
+        const source = path.join(prismaDir, schema);
+        const target = path.join(prismaDir, "schema.prisma");
 
-        console.log(`Prisma directory: ${prismaDir}`);
-
-        const sourceFile = isWindows
-            ? path.join(prismaDir, "schema.sqlite-prisma")
-            : path.join(prismaDir, "schema.postgresql-prisma");
-
-        const targetFile = path.join(prismaDir, "schema.prisma");
-
-        console.log(`Copying from ${sourceFile} to ${targetFile}`);
-
-        await fs.copyFile(sourceFile, targetFile);
-        console.log("✅ Schema copied successfully");
-
-        return true;
+        console.log(`⏳ Выбор схемы: ${schema}`);
+        await fs.copyFile(source, target);
+        console.log("✅ Схема скопирована успешно.");
     }
-    catch (error) {
-        console.error("❌ Error selecting schema:", error);
+    catch (err) {
+        console.error("❌ Ошибка выбора схемы:", err);
         process.exit(1);
     }
-}
-
-void selectSchema();
+})();

@@ -43,15 +43,15 @@ services:
       main-applic:
         condition: service_healthy
 
-  sqltranslator:
-    container_name: sqltranslator_container
-    build:
-      context: ./sqltranslator
-      dockerfile: Dockerfile
-    working_dir: /app
-    depends_on:
-      db_sqlite:
-        condition: service_healthy
+  # sqltranslator:
+  #   container_name: sqltranslator_container
+  #   build:
+  #     context: ./sqltranslator
+  #     dockerfile: Dockerfile
+  #   working_dir: /app
+  #   depends_on:
+  #     db_sqlite:
+  #       condition: service_healthy
 
   db_sqlite:
     container_name: db_sqlite_container

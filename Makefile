@@ -115,15 +115,22 @@ backup_sqllite:
 # 	@echo "Готово"
 
 SQLITE_DB = ./main-applic/prisma/database-sql-lite.db
+POSTGRES_CONTAINER := full_db_postgres
+
 
 import_to_postgres:
 	@if [ ! -f $(SQLITE_DB) ]; then \
-		echo "Файл SQLite базы $(SQLITE_DB) не найден!"; \
+		echo "❌ Файл SQLite базы $(SQLITE_DB) не найден!"; \
 		exit 1; \
 	fi
-	@echo "Копируем базу SQLite в контейнер postgres..."
-	@docker cp $(SQLITE_DB) full_db_postgres:/tmp/database-sql-lite.db
-	@echo "Запускаем pgloader внутри контейнера postgres..."
-	@docker exec -it full_db_postgres pgloader \
-		--input sqlite:///tmp/database-sql-lite.db postgresql://$(NEXT_PUBLIC_DB_USER_DEV):$(NEXT_PUBLIC_DB_PASSWORD_DEV)@localhost:5432/$(NEXT_PUBLIC_DB_NAME_DEV)
-	@echo "Готово!"
+	@if ! docker ps --filter "name=$(POSTGRES_CONTAINER)" --filter "status=running" | grep -q $(POSTGRES_CONTAINER); then \
+		echo "❌ Контейнер $(POSTGRES_CONTAINER) не запущен!"; \
+		exit 1; \
+	fi
+	@echo "📦 Копируем базу SQLite в контейнер $(POSTGRES_CONTAINER)..."
+	@docker cp $(SQLITE_DB) $(POSTGRES_CONTAINER):/tmp/database-sql-lite.db
+	@echo "🚀 Запускаем pgloader внутри контейнера $(POSTGRES_CONTAINER)..."
+	@docker exec -it $(POSTGRES_CONTAINER) pgloader \
+		sqlite:///tmp/database-sql-lite.db \
+		postgresql://$(NEXT_PUBLIC_DB_USER_DEV):$(NEXT_PUBLIC_DB_PASSWORD_DEV)@localhost:5432/$(NEXT_PUBLIC_DB_NAME_DEV)
+	@echo "✅ Готово!"

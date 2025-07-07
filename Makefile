@@ -82,34 +82,48 @@ backup_sqllite:
 	fi
 
 
-convert_to_postgres: backup_sqlite
-	@echo "Проверяем содержимое исходного дампа:"
-	@head -n 2 $(SQLITE_DUMP)
-	@echo "Конвертируем дамп SQLite в PostgreSQL..."
-	@docker run --rm -v $(BACKUP_DIR):/app/backup $(IMAGE_NAME) /usr/local/bin/python3 /app/convert.py to-pg /app/backup/backup.sql /app/backup/backup_postgres.sql
-	@if [ -f "$(PG_DUMP)" ]; then \
-		ls -lh $(PG_DUMP); \
-		chmod $(shell stat -c %a $(SQLITE_DUMP)) $(PG_DUMP); \
-		echo "🔒 Права доступа сохранены"; \
-	else \
-		echo "Ошибка: файл $(PG_DUMP) не найден!"; \
-		exit 1; \
-	fi
-	@echo "Готово"
+# # convert_to_sqlite: backup_postgres
+# convert_to_sqlite:
+# 	@echo "Проверяем содержимое исходного дампа PostgreSQL:"
+# 	@head -n 2 $(PG_DUMP)
+# 	@echo "Конвертируем дамп PostgreSQL в SQLite..."
+# 	@docker run --rm -v $(BACKUP_DIR):/app/backup $(IMAGE_NAME) /usr/local/bin/python3 /app/convert.py to-sqlite /app/backup/backup_postgres.sql /app/backup/backup_sqlite.sql
+# 	@if [ -f "$(SQLITE_DUMP)" ]; then \
+# 		ls -lh $(SQLITE_DUMP); \
+# 		chmod $(shell stat -c %a $(PG_DUMP)) $(SQLITE_DUMP); \
+# 		echo "🔒 Права доступа сохранены"; \
+# 	else \
+# 		echo "Ошибка: файл $(SQLITE_DUMP) не найден!"; \
+# 		exit 1; \
+# 	fi
+# 	@echo "Готово"
 
 
-# convert_to_sqlite: backup_postgres
-convert_to_sqlite:
-	@echo "Проверяем содержимое исходного дампа PostgreSQL:"
-	@head -n 2 $(PG_DUMP)
-	@echo "Конвертируем дамп PostgreSQL в SQLite..."
-	@docker run --rm -v $(BACKUP_DIR):/app/backup $(IMAGE_NAME) /usr/local/bin/python3 /app/convert.py to-sqlite /app/backup/backup_postgres.sql /app/backup/backup_sqlite.sql
-	@if [ -f "$(SQLITE_DUMP)" ]; then \
-		ls -lh $(SQLITE_DUMP); \
-		chmod $(shell stat -c %a $(PG_DUMP)) $(SQLITE_DUMP); \
-		echo "🔒 Права доступа сохранены"; \
-	else \
-		echo "Ошибка: файл $(SQLITE_DUMP) не найден!"; \
+# convert_to_postgres: backup_sqllite
+# 	@echo "Проверяем содержимое исходного дампа:"
+# 	@head -n 2 $(SQLITE_DUMP)
+# 	@echo "Конвертируем дамп SQLite в PostgreSQL..."
+# 	@docker run --rm -v $(BACKUP_DIR):/app/backup $(IMAGE_NAME) /usr/local/bin/python3 /app/convert.py to-pg /app/backup/backup.sql /app/backup/backup_postgres.sql
+# 	@if [ -f "$(PG_DUMP)" ]; then \
+# 		ls -lh $(PG_DUMP); \
+# 		chmod $(shell stat -c %a $(SQLITE_DUMP)) $(PG_DUMP); \
+# 		echo "🔒 Права доступа сохранены"; \
+# 	else \
+# 		echo "Ошибка: файл $(PG_DUMP) не найден!"; \
+# 		exit 1; \
+# 	fi
+# 	@echo "Готово"
+
+SQLITE_DB = ./main-applic/prisma/database-sql-lite.db
+
+import_to_postgres:
+	@if [ ! -f $(SQLITE_DB) ]; then \
+		echo "Файл SQLite базы $(SQLITE_DB) не найден!"; \
 		exit 1; \
 	fi
-	@echo "Готово"
+	@echo "Копируем базу SQLite в контейнер postgres..."
+	@docker cp $(SQLITE_DB) full_db_postgres:/tmp/database-sql-lite.db
+	@echo "Запускаем pgloader внутри контейнера postgres..."
+	@docker exec -it full_db_postgres pgloader \
+		--input sqlite:///tmp/database-sql-lite.db postgresql://$(NEXT_PUBLIC_DB_USER_DEV):$(NEXT_PUBLIC_DB_PASSWORD_DEV)@localhost:5432/$(NEXT_PUBLIC_DB_NAME_DEV)
+	@echo "Готово!"

@@ -12,6 +12,9 @@ RUN pnpm install --frozen-lockfile
 
 COPY ./ ./
 
+# Выбираем правильную схему Prisma для Linux
+RUN pnpm ts-node scripts/select-schema.ts
+
 RUN pnpm prisma generate
 RUN pnpm build
 

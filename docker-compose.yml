@@ -4,6 +4,8 @@ services:
     build:
       context: main-applic
       dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: "postgresql://${NEXT_PUBLIC_DB_USER_DEV}:${NEXT_PUBLIC_DB_PASSWORD_DEV}@postgres:5432/${NEXT_PUBLIC_DB_NAME_DEV}?schema=public"
     container_name: main-applic_container
     ports:
       - "127.0.0.1:3007:3007"

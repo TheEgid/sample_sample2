@@ -12,7 +12,8 @@
         "build": "next build",
         "test": "jest",
         "serve": "pnpm build && pnpm start",
-        "prisma-generate": "pnpm prisma generate",
+        "postinstall": "ts-node scripts/select-schema.ts && pnpm prisma generate",
+        "prisma:generate": "prisma generate",
         "prisma-push": "pnpm prisma db push",
         "prisma-studio": "pnpm prisma studio"
     },

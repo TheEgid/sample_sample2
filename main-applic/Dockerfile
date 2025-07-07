@@ -1,27 +1,28 @@
 FROM node:23.10.0-bookworm-slim
 
-RUN apt-get update && apt-get install -y curl
+RUN apt-get update && apt-get install -y curl build-essential python3
 
 WORKDIR /app
 
-RUN npm install pnpm -g
+# Install pnpm
+RUN npm install -g pnpm
 
+# 1. Copy minimal files first
 COPY package.json pnpm-lock.yaml ./
 
+# 🔥 FIX: Copy required files before install (used by postinstall)
+COPY scripts ./scripts
+COPY prisma ./prisma
+
+# 2. Now safe to install with postinstall script
 RUN pnpm install --frozen-lockfile
 
+# 3. Copy the rest of the app
 COPY ./ ./
 
-# Выбираем правильную схему Prisma для Linux
-RUN pnpm ts-node scripts/select-schema.ts
-
+# 4. Optional: Re-run schema script explicitly (if needed)
+RUN npx ts-node --project tsconfig.json ./scripts/select-schema.ts
 RUN pnpm prisma generate
 RUN pnpm build
 
 EXPOSE 3007
-
-ENV NODE_ENV production
-ENV NEXT_TELEMETRY_DISABLED 1
-ENV NODE_TLS_REJECT_UNAUTHORIZED 0
-
-CMD ["pnpm", "start"]

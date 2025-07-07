@@ -2,28 +2,9 @@
 import sys
 from pathlib import Path
 import sqlglot
+import sqlglot.errors
 import subprocess
-
-
-def clean_sql_lines(sql_lines):
-    cleaned = []
-    skip_phrases = ["PRAGMA", "sqlite_sequence"]
-    in_transaction = False
-
-    for line in sql_lines:
-        if any(skip in line for skip in skip_phrases):
-            continue
-        if line.strip().upper().startswith("BEGIN"):
-            if in_transaction:
-                continue
-            in_transaction = True
-        if line.strip().upper().startswith("COMMIT"):
-            if not in_transaction:
-                continue
-            in_transaction = False
-        cleaned.append(line)
-
-    return cleaned
+import os
 
 
 def validate_sql_with_sqlite_docker(sql_path, container_name="db_sqlite_container"):
@@ -66,23 +47,31 @@ def convert_sql(input_path, output_path, source_dialect, target_dialect, validat
     with open(input_path, "r", encoding="utf-8") as f:
         raw_sql = f.read()
 
-    sql_list = sqlglot.transpile(
-        raw_sql,
-        read=source_dialect,
-        write=target_dialect,
-        pretty=True,
-    )
+    # Параметры для максимального сохранения исходной структуры
+    transpile_kwargs = {
+        "read": source_dialect,
+        "write": target_dialect,
+        "pretty": True,
+        "identify": "safe",  # Сохраняет регистр идентификаторов
+        "error_level": sqlglot.errors.ErrorLevel.IGNORE,
+        "unsupported_level": sqlglot.errors.ErrorLevel.IGNORE,
+    }
+
+    sql_list = sqlglot.transpile(raw_sql, **transpile_kwargs)
 
     if not sql_list:
         print("\u274C Результат конвертации пуст")
         sys.exit(1)
 
-    full_sql = ";\n\n".join(sql_list) + ";"
-    cleaned_sql_lines = clean_sql_lines(full_sql.splitlines())
-    cleaned_sql = "\n".join(cleaned_sql_lines)
-
+    full_sql = ";\n\n".join(sql_list)
     with open(output_path, "w", encoding="utf-8") as f:
-        f.write(cleaned_sql)
+        f.write(full_sql)
+
+    # Сохраняем права доступа исходного файла
+    if os.path.exists(input_path):
+        src_stat = os.stat(input_path)
+        os.chmod(output_path, src_stat.st_mode)
+        print(f"🔒 Права доступа сохранены: {oct(src_stat.st_mode)[-3:]}")
 
     print(f"\u2705 Конвертация завершена. Результат: {output_path}")
 

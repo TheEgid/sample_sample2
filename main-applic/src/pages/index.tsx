@@ -3,12 +3,12 @@ import { Button, Paper, Container, Space } from "@mantine/core";
 import { useUnit } from "effector-react";
 import Head from "next/head";
 import { ToastContainer } from "react-toastify";
+import ExpandableDiv from "src/components/ExpandableDiv";
+import DtatExample from "src/components/ModalContent";
+import NewElement from "src/components/Sub";
+import { getCounterVisitorActionFx } from "src/model/counter-visitor/state";
+import { $currentPetitionStore, checkPetitionFieldFx } from "src/model/some/current-petition-state";
 import ChBxes from "./ElementsOthers";
-import ExpandableDiv from "@/components/ExpandableDiv";
-import DtatExample from "@/components/ModalContent";
-import NewElement from "@/components/Sub";
-import { getCounterVisitorActionFx } from "@/model/counter-visitor/state";
-import { $currentPetitionStore, checkPetitionFieldFx } from "@/model/some/current-petition-state";
 
 const Home: React.FC = () => {
     // const { loading, error } = useUnit($addBlogItemStatus);

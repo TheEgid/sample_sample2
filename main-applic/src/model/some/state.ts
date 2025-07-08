@@ -1,5 +1,5 @@
 import { combine, createEffect, createStore, restore } from "effector";
-import { apiRoot } from "@/api";
+import { apiRoot } from "src/api";
 
 export const addBlogItemFx = createEffect(async () => apiRoot.get("database").json());
 

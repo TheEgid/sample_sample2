@@ -1,7 +1,7 @@
 import React from "react";
 import { Checkbox, Text, Space, Group, Stack } from "@mantine/core";
 import { useUnit } from "effector-react";
-import { $currentPetitionStore, setPetitionFieldFx, type IPetitionFormValues } from "@/model/some/current-petition-state";
+import { $currentPetitionStore, setPetitionFieldFx, type IPetitionFormValues } from "src/model/some/current-petition-state";
 
 const ChBxes = (): React.JSX.Element => {
     const {

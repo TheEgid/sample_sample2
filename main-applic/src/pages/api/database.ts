@@ -1,5 +1,5 @@
+import prisma from "src/services/databaseService";
 import type { NextApiRequest, NextApiResponse } from "next";
-import prisma from "@/services/databaseService";
 
 async function checkPostgresConnection(): Promise<string | null | undefined> {
     try {
@@ -26,9 +26,3 @@ const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void>
 };
 
 export default handler;
-
-// // http://localhost:3006/api/database
-
-// // http://192.168.1.84/api/database
-
-// // http://192.168.1.84

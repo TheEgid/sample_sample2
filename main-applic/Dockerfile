@@ -1,28 +1,55 @@
-FROM node:23.10.0-bookworm-slim
+# ------------------------ ------------------------Stage 1: Update ------------------------ ------------------------
+    FROM node:22.17-bookworm-slim AS prebuilder
 
-RUN apt-get update && apt-get install -y curl build-essential python3
+    RUN npm install pnpm -g
 
-WORKDIR /app
+    RUN apt-get update && apt-get install -y \
+    curl \
+    openssl \
+    libreoffice-writer \
+    libreoffice-gtk3 \
+    --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install pnpm
-RUN npm install -g pnpm
+    WORKDIR /app
 
-# 1. Copy minimal files first
-COPY package.json pnpm-lock.yaml ./
+    # ------------------------ ------------------------Stage 2: Build ------------------------ ------------------------
+    FROM node:22.17-bookworm-slim AS builder
 
-# 🔥 FIX: Copy required files before install (used by postinstall)
-COPY scripts ./scripts
-COPY prisma ./prisma
+    COPY --from=prebuilder ./ ./
 
-# 2. Now safe to install with postinstall script
-RUN pnpm install --frozen-lockfile
+    WORKDIR /app
 
-# 3. Copy the rest of the app
-COPY ./ ./
+    ENV NODE_ENV production
+    ENV NEXT_TELEMETRY_DISABLED 1
+    ENV NODE_TLS_REJECT_UNAUTHORIZED 0
 
-# 4. Optional: Re-run schema script explicitly (if needed)
-RUN npx ts-node --project tsconfig.json ./scripts/select-schema.ts
-RUN pnpm prisma generate
-RUN pnpm build
+    COPY package.json pnpm-lock.yaml ./
 
-EXPOSE 3007
+    RUN pnpm install --frozen-lockfile --prefer-offline
+
+    COPY ./ ./
+
+    RUN pnpm select-schema
+
+    COPY ./prisma ./prisma
+
+    RUN pnpm prisma generate
+
+    RUN pnpm build
+
+    # ------------------------ ------------------------Stage 3: Application ------------------------ ------------------------
+    FROM node:22.17-bookworm-slim AS application
+
+    COPY --from=prebuilder ./ ./
+    COPY --from=builder /app /app
+
+    WORKDIR /app
+
+    EXPOSE 3006
+
+    ENV NODE_ENV production
+    ENV NEXT_TELEMETRY_DISABLED 1
+    ENV NODE_TLS_REJECT_UNAUTHORIZED 0
+
+    CMD ["pnpm", "start"]

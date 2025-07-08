@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { listToTree } from "@/tools";
+import { listToTree } from "src/tools";
 
 export interface ITreeNode {
     value: string,

@@ -82,9 +82,10 @@ backup_sqllite:
 	fi
 
 
-SQLITE_DATABASE = ./main-applic/prisma/database-sql-lite.db
-POSTGRES_CONTAINER := full_db_postgres
-
+SQLITE_DATABASE := ./main-applic/prisma/database-sql-lite.db
+POSTGRES_CONTAINER := db_postgres_container
+IMPORT_LOAD_TEMPLATE := import.load.tpl
+IMPORT_LOAD :=import.load
 
 import_to_postgres:
 	@if [ ! -f $(SQLITE_DATABASE) ]; then \
@@ -95,10 +96,11 @@ import_to_postgres:
 		echo "❌ Контейнер $(POSTGRES_CONTAINER) не запущен!"; \
 		exit 1; \
 	fi
-	@echo "📦 Копируем базу SQLite в контейнер $(POSTGRES_CONTAINER)..."
-	@docker cp $(SQLITE_DATABASE) $(POSTGRES_CONTAINER):/tmp/database-sql-lite.db
+	@echo "📦 Копируем SQLite базу и шаблон конфигурации в контейнер $(POSTGRES_CONTAINER)..."
+	@docker cp $(SQLITE_DATABASE) $(POSTGRES_CONTAINER):/app/database-sql-lite.db
+	@docker cp $(IMPORT_LOAD_TEMPLATE) $(POSTGRES_CONTAINER):/app/import.load.tpl
+	@echo "🚀 Формируем конфиг pgloader с подстановкой переменных окружения (запуск от root)..."
+	@docker exec -u root $(POSTGRES_CONTAINER) /bin/sh -c 'export NEXT_PUBLIC_DB_USER_DEV="$(NEXT_PUBLIC_DB_USER_DEV)" && export NEXT_PUBLIC_DB_PASSWORD_DEV="$(NEXT_PUBLIC_DB_PASSWORD_DEV)" && export NEXT_PUBLIC_DB_NAME_DEV="$(NEXT_PUBLIC_DB_NAME_DEV)" && envsubst < /app/import.load.tpl > /app/import.load'
 	@echo "🚀 Запускаем pgloader внутри контейнера $(POSTGRES_CONTAINER)..."
-	@docker exec -it $(POSTGRES_CONTAINER) pgloader \
-		sqlite:///tmp/database-sql-lite.db \
-		postgresql://$(NEXT_PUBLIC_DB_USER_DEV):$(NEXT_PUBLIC_DB_PASSWORD_DEV)@localhost:5432/$(NEXT_PUBLIC_DB_NAME_DEV)
+	@docker exec -i $(POSTGRES_CONTAINER) pgloader /app/import.load
 	@echo "✅ Готово!"

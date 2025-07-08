@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { Button, Loader, Space, Stack, Text } from "@mantine/core";
 import { useUnit } from "effector-react";
-import { $counterVisitorIsLoading, $counterVisitors } from "@/model/counter-visitor/state";
+import { $counterVisitorIsLoading, $counterVisitors } from "src/model/counter-visitor/state";
 
 const DtatExample = (): React.JSX.Element => {
     const isPending = useUnit($counterVisitorIsLoading);

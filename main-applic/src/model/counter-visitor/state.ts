@@ -1,6 +1,6 @@
 import { createEffect, createStore, sample } from "effector";
-import type { IUser } from "@/services/databaseService";
-import { apiRoot } from "@/api";
+import { apiRoot } from "src/api";
+import type { IUser } from "src/services/databaseService";
 
 export const $counterVisitors = createStore<IUser[] | undefined>(undefined, {
     skipVoid: false,

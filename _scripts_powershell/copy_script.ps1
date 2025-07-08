@@ -30,6 +30,16 @@ $robocopyArgs = @(
 
 robocopy @robocopyArgs
 
+# Удаляем файл schema.prisma из папки назначения
+$schemaFile = Join-Path $dst "main-applic\prisma\schema.prisma"
+
+if (Test-Path $schemaFile) {
+    Remove-Item $schemaFile -Force
+    Write-Output "Remove $schemaFile"
+} else {
+    Write-Output "Not finded $schemaFile"
+}
+
 $elapsed = (Get-Date) - $start
 Write-Output "Copy completed at: $dst"
 Write-Output ("Elapsed time: {0} seconds" -f $elapsed.TotalSeconds.ToString('N2'))

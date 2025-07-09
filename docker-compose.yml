@@ -48,29 +48,6 @@ services:
       retries: 3
       start_period: 10s
 
-  # db_sqlite:
-  #   container_name: db_sqlite_container
-  #   image: nouchka/sqlite3
-  #   volumes:
-  #     - /opt/iul-now-June-25/main-applic/prisma:/database
-  #   tty: true
-  #   stdin_open: true
-  #   working_dir: /database
-  #   entrypoint: >
-  #     sh -c "
-  #     if [ ! -f /database/database-sql-lite.db ]; then
-  #       echo 'Создаём базу данных...';
-  #       sqlite3 /database/database-sql-lite.db 'PRAGMA journal_mode=WAL;';
-  #     fi;
-  #     exec sqlite3 /database/database-sql-lite.db
-  #     "
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "sqlite3 /database/database-sql-lite.db 'SELECT 1;'"]
-  #     interval: 5s
-  #     timeout: 3s
-  #     retries: 5
-  #     start_period: 10s
-
   postgres:
     build:
       context: postgres-db
@@ -80,8 +57,6 @@ services:
       - database_volume:/var/lib/postgresql/data
     ports:
       - "127.0.0.1:5432:5432"
-    env_file:
-      - ./main-applic/.env
     environment:
       TZ: "Europe/Moscow"
       POSTGRES_DB: "${NEXT_PUBLIC_DB_NAME_DEV}"
@@ -98,6 +73,19 @@ services:
       timeout: 3s
       retries: 2
       start_period: 5s
+
+  # postgresql-to-sqlite:
+  #   build:
+  #     context: postgresql_to_sqlite
+  #     dockerfile: Dockerfile
+  #   container_name: postgresql_to_sqlite_container
+  #   restart: "no"
+  #   volumes:
+  #     - ./backup:/app
+  #   entrypoint: ["java", "-jar", "/app/pg2sqlite.jar"]
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
 
 volumes:
   database_volume:

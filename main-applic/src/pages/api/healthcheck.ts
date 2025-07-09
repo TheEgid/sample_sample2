@@ -1,12 +1,21 @@
-import type { NextApiRequest, NextApiResponse } from "next";
+import { type NextApiRequest, type NextApiResponse } from "next";
+
+const handleGet = async (_req: NextApiRequest, res: NextApiResponse): Promise<void> => {
+    try {
+        return res.status(200).json("ok");
+    }
+    catch (error) {
+        return res.status(400).json({ error: `Error handleGet: ${(error as Error).message}` });
+    }
+};
 
 // GET /api/healthcheck
-const handler = (req: NextApiRequest, res: NextApiResponse): void => {
+const handler = async (req: NextApiRequest, res: NextApiResponse): Promise<void> => {
     if (req.method === "GET") {
-        res.status(200).send("OK");
+        await handleGet(req, res);
     }
     else {
-        res.status(405).send({ message: "Method not allowed" });
+        return res.status(405).json({ message: "Method not allowed" });
     }
 };
 

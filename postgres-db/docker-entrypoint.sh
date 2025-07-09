@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+# Запускаем настройку логов
+if [ -f /docker-entrypoint-initdb.d/set_pg_logs.sh ]; then
+	/docker-entrypoint-initdb.d/set_pg_logs.sh
+fi
 
 file_env() {
 	local var="$1"

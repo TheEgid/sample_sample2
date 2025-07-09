@@ -31,61 +31,12 @@ clean:
 up:
 	@sudo dnf --refresh update && sudo dnf upgrade
 
-SQLITE_DUMP := $(shell pwd)/backup/backup.sql
-PG_DUMP := $(shell pwd)/backup/backup_postgres.sql
-BACKUP_DIR := $(shell pwd)/backup
-# //имя через - docker images | grep sqltranslator
-IMAGE_NAME := sample_sample2-sqltranslator
-
-
-restore_sqllite:
-	@if [ ! -f $(SQLITE_DUMP) ]; then \
-		echo "Файл дампа $(SQLITE_DUMP) не найден!"; \
-		exit 1; \
-	fi
-	@echo "Останавливаем контейнер db_sqlite_container..."
-	@docker stop db_sqlite_container || echo "Контейнер уже остановлен или не запущен."
-	@echo "Удаляем файл базы из локальной папки ./main-applic/prisma..."
-	@rm -f ./main-applic/prisma/database-sql-lite.db || echo "Файл базы не найден"
-	@echo "Запускаем контейнер db_sqlite_container..."
-	@docker start db_sqlite_container
-	@sleep 5
-	@if ! docker ps --filter "name=db_sqlite_container" --filter "status=running" | grep -q db_sqlite_container; then \
-		echo "Контейнер db_sqlite_container не запущен!"; \
-		exit 1; \
-	fi
-	@echo "Восстанавливаем базу из дампа..."
-	@if sed '/BEGIN TRANSACTION;/d;/COMMIT;/d' $(SQLITE_DUMP) | docker exec -i db_sqlite_container sqlite3 /database/database-sql-lite.db; then \
-		echo "Восстановление базы завершено успешно! $$(date +%F--%H-%M)"; \
-	else \
-		echo "Ошибка при восстановлении базы!"; \
-		exit 1; \
-	fi
-
-
-backup_sqllite:
-	@echo "Создаём дамп базы SQLite с DROP TABLE и DROP INDEX..."
-	@mkdir -p $(BACKUP_DIR)
-	@chmod 777 $(BACKUP_DIR)
-	@if docker exec -i db_sqlite_container sh -c '\
-		echo "BEGIN TRANSACTION;"; \
-		sqlite3 /database/database-sql-lite.db "SELECT '\''DROP TABLE IF EXISTS '\'' || name || '\'';'\'' FROM sqlite_master WHERE type='\''table'\'' AND name NOT LIKE '\''sqlite_%'\'';"; \
-		sqlite3 /database/database-sql-lite.db "SELECT '\''DROP INDEX IF EXISTS '\'' || name || '\'';'\'' FROM sqlite_master WHERE type='\''index'\'';"; \
-		sqlite3 /database/database-sql-lite.db ".dump"; \
-		echo "COMMIT;"; \
-	' > $(SQLITE_DUMP); then \
-		chmod 777 $(SQLITE_DUMP); \
-		echo "Дамп успешно создан! $$(date +%F--%H-%M)"; \
-	else \
-		echo "Ошибка при создании дампа базы!"; \
-		exit 1; \
-	fi
-
 
 SQLITE_DATABASE := ./main-applic/prisma/database-sql-lite.db
 POSTGRES_CONTAINER := db_postgres_container
-IMPORT_LOAD_TEMPLATE := import.load.tpl
-IMPORT_LOAD :=import.load
+IMPORT_LOAD_TEMPLATE=import.load.tpl
+IMPORT_LOAD=import.load
+
 
 import_to_postgres:
 	@if [ ! -f $(SQLITE_DATABASE) ]; then \
@@ -96,11 +47,40 @@ import_to_postgres:
 		echo "❌ Контейнер $(POSTGRES_CONTAINER) не запущен!"; \
 		exit 1; \
 	fi
-	@echo "📦 Копируем SQLite базу и шаблон конфигурации в контейнер $(POSTGRES_CONTAINER)..."
+	@echo "📦 Копируем SQLite базу, шаблон конфигурации и скрипт render_template.py в контейнер $(POSTGRES_CONTAINER)..."
 	@docker cp $(SQLITE_DATABASE) $(POSTGRES_CONTAINER):/app/database-sql-lite.db
-	@docker cp $(IMPORT_LOAD_TEMPLATE) $(POSTGRES_CONTAINER):/app/import.load.tpl
 	@echo "🚀 Формируем конфиг pgloader с подстановкой переменных окружения (запуск от root)..."
-	@docker exec -u root $(POSTGRES_CONTAINER) /bin/sh -c 'export NEXT_PUBLIC_DB_USER_DEV="$(NEXT_PUBLIC_DB_USER_DEV)" && export NEXT_PUBLIC_DB_PASSWORD_DEV="$(NEXT_PUBLIC_DB_PASSWORD_DEV)" && export NEXT_PUBLIC_DB_NAME_DEV="$(NEXT_PUBLIC_DB_NAME_DEV)" && envsubst < /app/import.load.tpl > /app/import.load'
+	@docker exec -u root $(POSTGRES_CONTAINER) /bin/bash -c 'NODE_PATH=$$(npm root -g) node /render_template.js'
 	@echo "🚀 Запускаем pgloader внутри контейнера $(POSTGRES_CONTAINER)..."
-	@docker exec -i $(POSTGRES_CONTAINER) pgloader /app/import.load
+	@docker exec -i $(POSTGRES_CONTAINER) pgloader /import.load
 	@echo "✅ Готово!"
+
+
+BACKUP_DIR := $(shell pwd)/backup
+BACKUP_FILE_CONTAINER := /app/backup/postgres_backup_$(shell date +%F_%H-%M-%S).dump
+
+
+backup_postgres:
+	@if ! docker ps --filter "name=$(POSTGRES_CONTAINER)" --filter "status=running" | grep -q $(POSTGRES_CONTAINER); then \
+		echo "❌ Контейнер $(POSTGRES_CONTAINER) не запущен!"; \
+		exit 1; \
+	fi
+	@echo "🚀 Формируем строку подключения из .env..."
+	@PG_USER=$(NEXT_PUBLIC_DB_USER_DEV); \
+	PG_PASS=$(NEXT_PUBLIC_DB_PASSWORD_DEV); \
+	PG_DB=$(NEXT_PUBLIC_DB_NAME_DEV); \
+	echo "Создаём папку для бэкапов в контейнере..."; \
+	docker exec $(POSTGRES_CONTAINER) mkdir -p /app/backup; \
+	echo "🚀 Запускаем pg_dump внутри контейнера..."; \
+	docker exec -e PGPASSWORD=$$PG_PASS $(POSTGRES_CONTAINER) pg_dump -U $$PG_USER -F c -b -v -f $(BACKUP_FILE_CONTAINER) $$PG_DB; \
+	echo "✅ Бэкап сохранён в $(BACKUP_FILE_CONTAINER) внутри контейнера $(POSTGRES_CONTAINER)"; \
+	echo "Создаём папку для бэкапов на хосте: $(BACKUP_DIR)"; \
+	mkdir -p $(BACKUP_DIR); \
+	echo "📦 Копируем бэкап на хост..."; \
+	docker cp $(POSTGRES_CONTAINER):$(BACKUP_FILE_CONTAINER) $(BACKUP_DIR)/; \
+	echo "✅ Бэкап скопирован в $(BACKUP_DIR)/"; \
+
+# echo "🚀 Запускаем конвертацию PostgreSQL дампа в SQLite...";
+# docker run --rm -v "$(BACKUP_DIR)":/app postgresql-to-sqlite:latest \
+# 	java -jar /app/pg2sqlite.jar -d "/app/$(notdir $(BACKUP_FILE_CONTAINER))" -o /app/converted_database-sql-lite.sqlite; \
+# echo "✅ Конвертация завершена, файл SQLite: $(BACKUP_DIR)/converted_database-sql-lite.sqlite"

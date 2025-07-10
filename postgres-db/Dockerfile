@@ -2,6 +2,8 @@ FROM postgres:17.4-bookworm
 
 USER root
 
+WORKDIR /app
+
 RUN apt-get update && apt-get install -y pgloader nodejs npm \
     && npm install -g nunjucks \
     && rm -rf /var/lib/apt/lists/*
@@ -22,7 +24,6 @@ RUN mkdir -p /docker-entrypoint-initdb.d && mv /set_pg_logs.sh /docker-entrypoin
 
 RUN mkdir -p /app && chown -R postgres:postgres /app
 
-WORKDIR /app
 ENV TZ='Europe/Moscow'
 
 ENTRYPOINT ["/docker-entrypoint.sh"]

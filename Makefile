@@ -37,6 +37,9 @@ POSTGRES_CONTAINER := db_postgres_container
 IMPORT_LOAD_TEMPLATE=import.load.tpl
 IMPORT_LOAD=import.load
 
+IMPORT_UNLOAD_TEMPLATE=import.unload.tpl
+IMPORT_UNLOAD=import.unload
+
 
 import_to_postgres:
 	@if [ ! -f "$(SQLITE_DATABASE)" ]; then \
@@ -51,17 +54,17 @@ import_to_postgres:
 		echo "❌ Контейнер $(POSTGRES_CONTAINER) не запущен!"; \
 		exit 1; \
 	fi
-	@echo "📦 Копируем SQLite базу, шаблон конфигурации и скрипт render_template.py в контейнер $(POSTGRES_CONTAINER)..."
+	@echo "📦 Копируем SQLite базу в контейнер $(POSTGRES_CONTAINER)..."
 	@docker cp $(SQLITE_DATABASE) $(POSTGRES_CONTAINER):/app/database-sql-lite.db
 	@echo "🚀 Формируем конфиг pgloader с подстановкой переменных окружения (запуск от root)..."
-	@docker exec -u root $(POSTGRES_CONTAINER) /bin/bash -c 'NODE_PATH=$$(npm root -g) node /render_template.js'
+	@docker exec -u root $(POSTGRES_CONTAINER) /bin/bash -c 'NODE_PATH=$$(npm root -g) node /render_template.js import.load.tpl'
 	@echo "🚀 Запускаем pgloader внутри контейнера $(POSTGRES_CONTAINER)..."
-	@docker exec -i $(POSTGRES_CONTAINER) pgloader /import.load
+	@docker exec -i $(POSTGRES_CONTAINER) pgloader /import.load || (echo "❌ Ошибка pgloader!"; exit 1)
+	@echo "🧹 Удаляем SQLite-базу внутри контейнера..."
+	@docker exec -u root $(POSTGRES_CONTAINER) rm -f /app/database-sql-lite.db /import.load
+	@echo "🧹 Удаляем локальный SQLite-файл..."
+	@rm -f $(SQLITE_DATABASE)
 	@echo "✅ Готово!"
-
-
-IMPORT_UNLOAD_TEMPLATE=import.unload.tpl
-IMPORT_UNLOAD=import.unload
 
 
 import_to_sqlite:
@@ -72,11 +75,13 @@ import_to_sqlite:
 	@echo "🚀 Копируем шаблон конфигурации import.unload.tpl в контейнер $(POSTGRES_CONTAINER)..."
 	@docker cp postgres-db/$(IMPORT_UNLOAD_TEMPLATE) $(POSTGRES_CONTAINER):/$(IMPORT_UNLOAD_TEMPLATE)
 	@echo "🚀 Формируем конфиг pgloader с подстановкой переменных окружения (запуск от root)..."
-	@docker exec -u root $(POSTGRES_CONTAINER) /bin/bash -c 'cp /$(IMPORT_UNLOAD_TEMPLATE) /import.load && NODE_PATH=$$(npm root -g) node /render_template.js'
+	@docker exec -u root $(POSTGRES_CONTAINER) /bin/bash -c 'cp /$(IMPORT_UNLOAD_TEMPLATE) /import.load && NODE_PATH=$$(npm root -g) node /render_template.js import.unload.tpl'
 	@echo "🚀 Запускаем pgloader внутри контейнера $(POSTGRES_CONTAINER)..."
-	@docker exec -i $(POSTGRES_CONTAINER) pgloader /import.load
-	@echo "📦 Копируем SQLite базу из контейнера $(POSTGRES_CONTAINER) на хост..."
+	@docker exec -i $(POSTGRES_CONTAINER) pgloader /import.load || (echo "❌ Ошибка pgloader!"; exit 1)
+	@echo "📦 Копируем SQLite базу из контейнера на хост..."
 	@docker cp $(POSTGRES_CONTAINER):/app/database-sql-lite.db $(SQLITE_DATABASE)
+	@echo "🧹 Удаляем временные файлы внутри контейнера..."
+	@docker exec -u root $(POSTGRES_CONTAINER) rm -f /app/database-sql-lite.db /import.load /$(IMPORT_UNLOAD_TEMPLATE)
 	@echo "✅ Готово! База сконвертирована в SQLite: $(SQLITE_DATABASE)"
 
 
@@ -103,9 +108,3 @@ backup_postgres:
 	echo "📦 Копируем бэкап на хост..."; \
 	docker cp $(POSTGRES_CONTAINER):$(BACKUP_FILE_CONTAINER) $(BACKUP_DIR)/; \
 	echo "✅ Бэкап скопирован в $(BACKUP_DIR)/"; \
-
-
-# echo "🚀 Запускаем конвертацию PostgreSQL дампа в SQLite...";
-# docker run --rm -v "$(BACKUP_DIR)":/app postgresql-to-sqlite:latest \
-# 	java -jar /app/pg2sqlite.jar -d "/app/$(notdir $(BACKUP_FILE_CONTAINER))" -o /app/converted_database-sql-lite.sqlite; \
-# echo "✅ Конвертация завершена, файл SQLite: $(BACKUP_DIR)/converted_database-sql-lite.sqlite"

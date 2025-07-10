@@ -55,7 +55,7 @@ services:
     container_name: db_postgres_container
     volumes:
       - database_volume:/var/lib/postgresql/data
-      - ./main-applic/prisma:/app
+      # - ./main-applic/prisma:/app
     ports:
       - "127.0.0.1:5432:5432"
     environment:
@@ -73,20 +73,6 @@ services:
       timeout: 3s
       retries: 2
       start_period: 5s
-
-
-  # postgresql-to-sqlite:
-  #   build:
-  #     context: postgresql_to_sqlite
-  #     dockerfile: Dockerfile
-  #   container_name: postgresql_to_sqlite_container
-  #   restart: "no"
-  #   volumes:
-  #     - ./backup:/app
-  #   entrypoint: ["java", "-jar", "/app/pg2sqlite.jar"]
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
 
 volumes:
   database_volume:

@@ -18,7 +18,7 @@ COPY \
     /
 
 RUN chmod +x /render_template.js /docker-entrypoint.sh /set_pg_logs.sh && \
-    sed -i 's/\r$//' /render_template.js /import.load.tpl /import.unload.tpl /set_pg_logs.sh /docker-entrypoint.sh
+    dos2unix /render_template.js /import.load.tpl /import.unload.tpl /set_pg_logs.sh /docker-entrypoint.sh
 
 RUN mkdir -p /docker-entrypoint-initdb.d && mv /set_pg_logs.sh /docker-entrypoint-initdb.d/
 

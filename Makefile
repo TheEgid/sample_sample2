@@ -63,8 +63,6 @@ import_to_postgres:
 	@docker exec -it $(POSTGRES_CONTAINER) dos2unix /import.load
 	@echo "🧹 Удаляем SQLite-базу внутри контейнера..."
 	@docker exec -u root $(POSTGRES_CONTAINER) rm -f /app/database-sql-lite.db /import.load
-# @echo "🧹 Удаляем локальный SQLite-файл..."
-# @rm -f $(SQLITE_DATABASE)
 	@echo "✅ Готово!"
 
 
@@ -82,8 +80,6 @@ import_to_sqlite:
 	@docker exec -it $(POSTGRES_CONTAINER) dos2unix /import.load
 	@echo "📦 Копируем SQLite базу из контейнера на хост..."
 	@docker cp $(POSTGRES_CONTAINER):/app/database-sql-lite.db $(SQLITE_DATABASE)
-# @echo "🧹 Удаляем временные файлы внутри контейнера..."
-# @docker exec -u root $(POSTGRES_CONTAINER) rm -f /app/database-sql-lite.db /import.load /$(IMPORT_UNLOAD_TEMPLATE)
 	@echo "✅ Готово! База сконвертирована в SQLite: $(SQLITE_DATABASE)"
 
 

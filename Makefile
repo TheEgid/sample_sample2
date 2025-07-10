@@ -6,7 +6,7 @@ COMPOSE_BAKE=true
 LANG=ru_RU.UTF-8
 
 
-all: run clean import_to_postgres
+all: run clean
 
 
 run:
@@ -60,10 +60,11 @@ import_to_postgres:
 	@docker exec -u root $(POSTGRES_CONTAINER) /bin/bash -c 'NODE_PATH=$$(npm root -g) node /render_template.js import.load.tpl'
 	@echo "🚀 Запускаем pgloader внутри контейнера $(POSTGRES_CONTAINER)..."
 	@docker exec -i $(POSTGRES_CONTAINER) pgloader /import.load || (echo "❌ Ошибка pgloader!"; exit 1)
+	@docker exec -it $(POSTGRES_CONTAINER) dos2unix /import.load
 	@echo "🧹 Удаляем SQLite-базу внутри контейнера..."
 	@docker exec -u root $(POSTGRES_CONTAINER) rm -f /app/database-sql-lite.db /import.load
-	@echo "🧹 Удаляем локальный SQLite-файл..."
-	@rm -f $(SQLITE_DATABASE)
+# @echo "🧹 Удаляем локальный SQLite-файл..."
+# @rm -f $(SQLITE_DATABASE)
 	@echo "✅ Готово!"
 
 
@@ -78,15 +79,31 @@ import_to_sqlite:
 	@docker exec -u root $(POSTGRES_CONTAINER) /bin/bash -c 'cp /$(IMPORT_UNLOAD_TEMPLATE) /import.load && NODE_PATH=$$(npm root -g) node /render_template.js import.unload.tpl'
 	@echo "🚀 Запускаем pgloader внутри контейнера $(POSTGRES_CONTAINER)..."
 	@docker exec -i $(POSTGRES_CONTAINER) pgloader /import.load || (echo "❌ Ошибка pgloader!"; exit 1)
+	@docker exec -it $(POSTGRES_CONTAINER) dos2unix /import.load
 	@echo "📦 Копируем SQLite базу из контейнера на хост..."
 	@docker cp $(POSTGRES_CONTAINER):/app/database-sql-lite.db $(SQLITE_DATABASE)
-	@echo "🧹 Удаляем временные файлы внутри контейнера..."
-	@docker exec -u root $(POSTGRES_CONTAINER) rm -f /app/database-sql-lite.db /import.load /$(IMPORT_UNLOAD_TEMPLATE)
+# @echo "🧹 Удаляем временные файлы внутри контейнера..."
+# @docker exec -u root $(POSTGRES_CONTAINER) rm -f /app/database-sql-lite.db /import.load /$(IMPORT_UNLOAD_TEMPLATE)
 	@echo "✅ Готово! База сконвертирована в SQLite: $(SQLITE_DATABASE)"
+
+
+check_sqlite_schema:
+	@if [ ! -f "$(SQLITE_DATABASE)" ]; then \
+		echo "❌ Файл $(SQLITE_DATABASE) не найден! Сначала выполните make import_to_sqlite"; \
+		exit 1; \
+	fi
+	@echo "📋 Таблицы в SQLite:"
+	@sqlite3 $(SQLITE_DATABASE) '.tables'
+	@echo ""
+	@echo "🧩 Схема таблицы user:"
+	@sqlite3 $(SQLITE_DATABASE) 'PRAGMA table_info("user");'
 
 
 BACKUP_DIR := $(shell pwd)/backup
 BACKUP_FILE_CONTAINER := /app/backup/postgres_backup_$(shell date +%F_%H-%M-%S).dump
+
+
+#...................................................................................................................................................................
 
 
 backup_postgres:
@@ -108,3 +125,14 @@ backup_postgres:
 	echo "📦 Копируем бэкап на хост..."; \
 	docker cp $(POSTGRES_CONTAINER):$(BACKUP_FILE_CONTAINER) $(BACKUP_DIR)/; \
 	echo "✅ Бэкап скопирован в $(BACKUP_DIR)/"; \
+
+
+insert_user_postgres:
+	@if ! docker ps --filter "name=$(POSTGRES_CONTAINER)" --filter "status=running" | grep -q $(POSTGRES_CONTAINER); then \
+		echo "❌ Контейнер $(POSTGRES_CONTAINER) не запущен!"; \
+		exit 1; \
+	fi
+	@echo "🚀 Добавляем пользователя в PostgreSQL..."
+	@docker exec -e PGPASSWORD=$(MY_DB_PASSWORD_DEV) $(POSTGRES_CONTAINER) psql -U $(MY_DB_USER_DEV) -d $(MY_DB_NAME_DEV) -c \
+	"INSERT INTO \"user\" (email, name) VALUES ('testuser@example.com', 'CLI User ТРИ');"
+	@echo "✅ Пользователь добавлен."

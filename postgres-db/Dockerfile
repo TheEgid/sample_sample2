@@ -4,7 +4,7 @@ USER root
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y pgloader nodejs npm \
+RUN apt-get update && apt-get install -y pgloader nodejs dos2unix npm \
     && npm install -g nunjucks \
     && rm -rf /var/lib/apt/lists/*
 

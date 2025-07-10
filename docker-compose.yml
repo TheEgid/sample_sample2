@@ -55,7 +55,7 @@ services:
     container_name: db_postgres_container
     volumes:
       - database_volume:/var/lib/postgresql/data
-      # - ./main-applic/prisma:/app
+      - ./main-applic/prisma:/app
     ports:
       - "127.0.0.1:5432:5432"
     environment:

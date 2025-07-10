@@ -19,7 +19,8 @@ try {
     // Записываем в /import.load независимо от шаблона
     fs.writeFileSync('/import.load', rendered, 'utf8');
 
-    console.log(`✅ Сгенерирован /import.load из шаблона ${templateName}`);
+    // Выводим сообщение в stderr, чтобы оно не попало в файл при перенаправлении
+    console.error(`✅ Сгенерирован /import.load из шаблона ${templateName}`);
 } catch (error) {
     console.error('❌ Ошибка при генерации шаблона:', error.message);
     process.exit(1);

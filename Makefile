@@ -74,10 +74,10 @@ import_to_sqlite:
 	@echo "🚀 Копируем шаблон конфигурации import.unload.tpl в контейнер $(POSTGRES_CONTAINER)..."
 	@docker cp postgres-db/$(IMPORT_UNLOAD_TEMPLATE) $(POSTGRES_CONTAINER):/$(IMPORT_UNLOAD_TEMPLATE)
 	@echo "🚀 Формируем конфиг pgloader с подстановкой переменных окружения (запуск от root)..."
-	@docker exec -u root $(POSTGRES_CONTAINER) /bin/bash -c 'cp /$(IMPORT_UNLOAD_TEMPLATE) /import.load && NODE_PATH=$$(npm root -g) node /render_template.js import.unload.tpl'
+	@docker exec -u root $(POSTGRES_CONTAINER) /bin/bash -c 'NODE_PATH=$$(npm root -g) node /render_template.js import.unload.tpl > /import.load'
+	@docker exec -u root $(POSTGRES_CONTAINER) dos2unix /import.load
 	@echo "🚀 Запускаем pgloader внутри контейнера $(POSTGRES_CONTAINER)..."
 	@docker exec -i $(POSTGRES_CONTAINER) pgloader /import.load || (echo "❌ Ошибка pgloader!"; exit 1)
-	@docker exec -it $(POSTGRES_CONTAINER) dos2unix /import.load
 	@echo "📦 Копируем SQLite базу из контейнера на хост..."
 	@docker cp $(POSTGRES_CONTAINER):/app/database-sql-lite.db $(SQLITE_DATABASE)
 	@echo "✅ Готово! База сконвертирована в SQLite: $(SQLITE_DATABASE)"

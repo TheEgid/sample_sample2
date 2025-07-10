@@ -6,7 +6,7 @@ COMPOSE_BAKE=true
 LANG=ru_RU.UTF-8
 
 
-all: run clean # restore test clean run
+all: run clean import_to_postgres
 
 
 run:

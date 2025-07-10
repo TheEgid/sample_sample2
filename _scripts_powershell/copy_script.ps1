@@ -8,6 +8,7 @@ $dst = Join-Path ([Environment]::GetFolderPath("Desktop")) $folderName
 $excludeDirs = @(
     "main-applic\node_modules",
     ".git",
+    ".repomix",
     ".vscode",
     "main-applic\.next",
     "main-applic\build",

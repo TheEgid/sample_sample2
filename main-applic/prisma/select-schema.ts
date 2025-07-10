@@ -22,7 +22,6 @@ async function selectSchema(): Promise<void> {
         } catch {
             // Если файла нет — ничего не делаем
         }
-
         console.log(`⏳ Выбор схемы: ${schema}`);
         await fs.copyFile(source, target);
         console.log("✅ Схема скопирована успешно.");

@@ -1,6 +1,6 @@
 LOAD DATABASE
      FROM sqlite:///app/database-sql-lite.db
-     INTO postgresql://${NEXT_PUBLIC_DB_USER_DEV}:${NEXT_PUBLIC_DB_PASSWORD_DEV}@localhost:5432/${NEXT_PUBLIC_DB_NAME_DEV}
+     INTO postgresql://${MY_DB_USER_DEV}:${MY_DB_PASSWORD_DEV}@localhost:5432/${MY_DB_NAME_DEV}
 
 CAST
      type datetime to timestamptz using (lambda (x) (unix-timestamp-to-timestamptz (if x (floor x 1000)))),

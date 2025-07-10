@@ -1,5 +1,5 @@
 LOAD DATABASE
-     FROM sqlite:///app/database-sql-lite-new.db
+     FROM sqlite:///app/database-sql-lite.db
      INTO postgresql://{{ POSTGRES_USER }}:{{ POSTGRES_PASSWORD }}@localhost:5432/{{ POSTGRES_DB }}
 
 CAST

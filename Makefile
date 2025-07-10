@@ -39,8 +39,12 @@ IMPORT_LOAD=import.load
 
 
 import_to_postgres:
-	@if [ ! -f $(SQLITE_DATABASE) ]; then \
+	@if [ ! -f "$(SQLITE_DATABASE)" ]; then \
 		echo "❌ Файл SQLite базы $(SQLITE_DATABASE) не найден!"; \
+		exit 1; \
+	fi
+	@if [ ! -s "$(SQLITE_DATABASE)" ]; then \
+		echo "❌ Файл SQLite базы $(SQLITE_DATABASE) пустой!"; \
 		exit 1; \
 	fi
 	@if ! docker ps --filter "name=$(POSTGRES_CONTAINER)" --filter "status=running" | grep -q $(POSTGRES_CONTAINER); then \
@@ -66,9 +70,9 @@ backup_postgres:
 		exit 1; \
 	fi
 	@echo "🚀 Формируем строку подключения из .env..."
-	@PG_USER=$(NEXT_PUBLIC_DB_USER_DEV); \
-	PG_PASS=$(NEXT_PUBLIC_DB_PASSWORD_DEV); \
-	PG_DB=$(NEXT_PUBLIC_DB_NAME_DEV); \
+	@PG_USER=$(MY_DB_USER_DEV); \
+	PG_PASS=$(MY_DB_PASSWORD_DEV); \
+	PG_DB=$(MY_DB_NAME_DEV); \
 	echo "Создаём папку для бэкапов в контейнере..."; \
 	docker exec $(POSTGRES_CONTAINER) mkdir -p /app/backup; \
 	echo "🚀 Запускаем pg_dump внутри контейнера..."; \

@@ -59,15 +59,15 @@ services:
       - "127.0.0.1:5432:5432"
     environment:
       TZ: "Europe/Moscow"
-      POSTGRES_DB: "${NEXT_PUBLIC_DB_NAME_DEV}"
-      POSTGRES_USER: "${NEXT_PUBLIC_DB_USER_DEV}"
-      POSTGRES_PASSWORD: "${NEXT_PUBLIC_DB_PASSWORD_DEV}"
+      POSTGRES_DB: "${MY_DB_NAME_DEV}"
+      POSTGRES_USER: "${MY_DB_USER_DEV}"
+      POSTGRES_PASSWORD: "${MY_DB_PASSWORD_DEV}"
       PGDATA: "/var/lib/postgresql/data" # можно не указывать, если используете дефолт
     healthcheck:
       test:
         [
           "CMD-SHELL",
-          "pg_isready -U ${NEXT_PUBLIC_DB_USER_DEV} -d ${NEXT_PUBLIC_DB_NAME_DEV}"
+          "pg_isready -U ${MY_DB_USER_DEV} -d ${MY_DB_NAME_DEV}"
         ]
       interval: 5s
       timeout: 3s

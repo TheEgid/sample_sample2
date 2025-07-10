@@ -60,6 +60,26 @@ import_to_postgres:
 	@echo "✅ Готово!"
 
 
+IMPORT_UNLOAD_TEMPLATE=import.unload.tpl
+IMPORT_UNLOAD=import.unload
+
+
+import_to_sqlite:
+	@if ! docker ps --filter "name=$(POSTGRES_CONTAINER)" --filter "status=running" | grep -q $(POSTGRES_CONTAINER); then \
+		echo "❌ Контейнер $(POSTGRES_CONTAINER) не запущен!"; \
+		exit 1; \
+	fi
+	@echo "🚀 Копируем шаблон конфигурации import.unload.tpl в контейнер $(POSTGRES_CONTAINER)..."
+	@docker cp postgres-db/$(IMPORT_UNLOAD_TEMPLATE) $(POSTGRES_CONTAINER):/$(IMPORT_UNLOAD_TEMPLATE)
+	@echo "🚀 Формируем конфиг pgloader с подстановкой переменных окружения (запуск от root)..."
+	@docker exec -u root $(POSTGRES_CONTAINER) /bin/bash -c 'cp /$(IMPORT_UNLOAD_TEMPLATE) /import.load && NODE_PATH=$$(npm root -g) node /render_template.js'
+	@echo "🚀 Запускаем pgloader внутри контейнера $(POSTGRES_CONTAINER)..."
+	@docker exec -i $(POSTGRES_CONTAINER) pgloader /import.load
+	@echo "📦 Копируем SQLite базу из контейнера $(POSTGRES_CONTAINER) на хост..."
+	@docker cp $(POSTGRES_CONTAINER):/app/database-sql-lite.db $(SQLITE_DATABASE)
+	@echo "✅ Готово! База сконвертирована в SQLite: $(SQLITE_DATABASE)"
+
+
 BACKUP_DIR := $(shell pwd)/backup
 BACKUP_FILE_CONTAINER := /app/backup/postgres_backup_$(shell date +%F_%H-%M-%S).dump
 
@@ -83,6 +103,7 @@ backup_postgres:
 	echo "📦 Копируем бэкап на хост..."; \
 	docker cp $(POSTGRES_CONTAINER):$(BACKUP_FILE_CONTAINER) $(BACKUP_DIR)/; \
 	echo "✅ Бэкап скопирован в $(BACKUP_DIR)/"; \
+
 
 # echo "🚀 Запускаем конвертацию PostgreSQL дампа в SQLite...";
 # docker run --rm -v "$(BACKUP_DIR)":/app postgresql-to-sqlite:latest \

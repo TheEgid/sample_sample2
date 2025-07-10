@@ -5,7 +5,6 @@ export type IUser = User;
 
 dotenv.config();
 
-// const DATABASE_URL = process.env.DATABASE_URL_DEV || "";
 const DATABASE_URL = process.platform === "win32"
     ? "file:./../prisma/database-sql-lite.db"
     : process.env.DATABASE_URL;

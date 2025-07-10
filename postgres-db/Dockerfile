@@ -3,33 +3,27 @@ FROM postgres:17.4-bookworm
 USER root
 
 RUN apt-get update && apt-get install -y pgloader nodejs npm \
+    && npm install -g nunjucks \
     && rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g nunjucks
+# Копируем все файлы одним слоем
+COPY \
+    ./render_template.js \
+    ./import.load.tpl \
+    ./import.unload.tpl \
+    ./set_pg_logs.sh \
+    ./docker-entrypoint.sh \
+    /
 
-COPY ./render_template.js /render_template.js
-RUN chmod +x /render_template.js
-RUN sed -i 's/\r$//' /render_template.js
+RUN chmod +x /render_template.js /docker-entrypoint.sh /set_pg_logs.sh && \
+    sed -i 's/\r$//' /render_template.js /import.load.tpl /import.unload.tpl /set_pg_logs.sh /docker-entrypoint.sh
 
-COPY ./import.load.tpl /import.load.tpl
-RUN sed -i 's/\r$//' /import.load.tpl
-
-COPY ./import.load.tpl /import.reload.tpl
-RUN sed -i 's/\r$//' /import.reload.tpl
-
-COPY ./set_pg_logs.sh /docker-entrypoint-initdb.d/set_pg_logs.sh
-RUN chmod +x /docker-entrypoint-initdb.d/set_pg_logs.sh
-RUN sed -i 's/\r$//' /docker-entrypoint-initdb.d/set_pg_logs.sh
-
-COPY ./docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
-RUN sed -i 's/\r$//' /docker-entrypoint.sh
+RUN mkdir -p /docker-entrypoint-initdb.d && mv /set_pg_logs.sh /docker-entrypoint-initdb.d/
 
 RUN mkdir -p /app && chown -R postgres:postgres /app
 
+WORKDIR /app
 ENV TZ='Europe/Moscow'
-
-# USER postgres
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
 

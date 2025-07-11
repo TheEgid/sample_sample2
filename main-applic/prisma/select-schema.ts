@@ -17,11 +17,12 @@ async function selectSchema(): Promise<void> {
 
         try {
             await fs.access(target);
-            await fs.unlink(target);
-            console.log(`Файл ${target} удалён перед копированием.`);
+            // await fs.unlink(target);
+            // console.log(`Файл ${target} удалён перед копированием.`);
         } catch {
             // Если файла нет — ничего не делаем
         }
+
         console.log(`⏳ Выбор схемы: ${schema}`);
         await fs.copyFile(source, target);
         console.log("✅ Схема скопирована успешно.");

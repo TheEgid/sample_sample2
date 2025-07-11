@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
-import { type User, PrismaClient } from "../../prisma/generated/prisma-client/client";
+import { type user, PrismaClient } from "../../prisma/generated/prisma-client/client";
 
-export type IUser = User;
+export type IUser = user;
 
 dotenv.config();
 
